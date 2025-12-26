@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Python (Backend)
+backend/.venv/
+backend/__pycache__/
+backend/*.wav
+backend/*.mp4
+backend/temp_*

@@ -1,140 +1,326 @@
-import { useState, useEffect } from 'react'
-import './App.css'
+import { useState, useEffect, useRef } from 'react';
+import './App.css';
 
 function App() {
-  // --- データの初期化 (ブラウザから読み込み) ---
-  const [goalData, setGoalData] = useState(() => {
-    const saved = localStorage.getItem('goalData')
-    return saved ? JSON.parse(saved) : { title: '', reason: '', deadline: '', risk: '', reward: '', isStarted: false }
-  })
-  const [history, setHistory] = useState(() => {
-    const saved = localStorage.getItem('habitHistory')
-    return saved ? JSON.parse(saved) : []
-  })
+  // --- 1. データの初期化 ---
+  const [goals, setGoals] = useState(() => {
+    try {
+      const saved = localStorage.getItem('CONTRACT_BRIGHT_V2');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
 
-  // 初期画面の判定：目標が設定されていなければ強制的に setup 画面へ
-  const [currentView, setCurrentView] = useState(goalData.isStarted ? 'dashboard' : 'setup')
+  const [serverUrl, setServerUrl] = useState(() => {
+    return localStorage.getItem('SERVER_URL') || 'https://experimental-til-comics-alleged.trycloudflare.com';
+  });
 
-  const today = new Date().toISOString().split('T')[0]
-  const isDoneToday = history.some(log => log.date === today)
-
-  // データの保存
+  // 【追加】URLパラメータからサーバーURLを自動取得するロジック
   useEffect(() => {
-    localStorage.setItem('goalData', JSON.stringify(goalData))
-    localStorage.setItem('habitHistory', JSON.stringify(history))
-  }, [goalData, history])
-
-  const handleStart = () => {
-    if (goalData.title && goalData.reason) {
-      const newData = { ...goalData, isStarted: true }
-      setGoalData(newData)
-      setCurrentView('dashboard')
+    const params = new URLSearchParams(window.location.search);
+    const urlParam = params.get('url');
+    if (urlParam) {
+      setServerUrl(urlParam);
+      // URLからパラメータを消して見た目を綺麗にする
+      window.history.replaceState({}, document.title, window.location.pathname);
+      alert("サーバーURLを自動更新しました！");
     }
-  }
+  }, []);
 
-  const handleDone = () => {
-    if (!isDoneToday) {
-      setHistory([{ date: today, goal: goalData.title }, ...history])
-    }
-  }
+  const [activeTab, setActiveTab] = useState('home');
+  const [editingGoal, setEditingGoal] = useState(null);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [selectedGoal, setSelectedGoal] = useState(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const [selectedVoiceType, setSelectedVoiceType] = useState('original');
+  const [isConverting, setIsConverting] = useState(false);
 
-  // --- 各画面のレンダリング ---
-  const renderContent = () => {
-    switch (currentView) {
-      case 'setup':
-        return (
-          <div className="view-fade">
-            <header className="page-header">
-              <h1>自分との契約書</h1>
-              <p>衝動を合理性に変える設計図 </p>
-            </header>
-            <div className="card setup-card">
-              <div className="input-group">
-                <label>成し遂げたい具体的目標</label>
-                <input value={goalData.title} onChange={e => setGoalData({ ...goalData, title: e.target.value })} placeholder="例: 毎日プログラミング" />
-              </div>
-              <div className="input-group">
-                <label>なぜやるのか（情熱の根拠）</label>
-                <textarea value={goalData.reason} onChange={e => setGoalData({ ...goalData, reason: e.target.value })} placeholder="理由がないと人は諦めます " />
-              </div>
-              <div className="input-group">
-                <label>達成期限</label>
-                <input type="date" value={goalData.deadline} onChange={e => setGoalData({ ...goalData, deadline: e.target.value })} />
-              </div>
-              <div className="grid-2">
-                <div className="input-group">
-                  <label>得られる報酬</label>
-                  <input value={goalData.reward} onChange={e => setGoalData({ ...goalData, reward: e.target.value })} placeholder="リターン" />
-                </div>
-                <div className="input-group">
-                  <label>やらないリスク</label>
-                  <input value={goalData.risk} onChange={e => setGoalData({ ...goalData, risk: e.target.value })} placeholder="損失 " />
-                </div>
-              </div>
-              <button className="primary-btn" onClick={handleStart}>誓いを立てて開始する</button>
-            </div>
-          </div>
-        )
-      case 'history':
-        return (
-          <div className="view-fade">
-            <header className="page-header">
-              <h1>振り返りアーカイブ</h1>
-            </header>
-            <div className="card">
-              <h3>原点の確認</h3>
-              <p className="reason-text"><strong>動機:</strong> {goalData.reason}</p>
-              <p className="risk-text"><strong>不履行時の損失:</strong> {goalData.risk}</p>
-            </div>
-            <div className="history-list">
-              {history.map((log, i) => (
-                <div key={i} className="history-item card">
-                  <span>✅ {log.date}</span>
-                  <small>ACHIEVED</small>
-                </div>
-              ))}
-            </div>
-          </div>
-        )
-      default: // dashboard
-        return (
-          <div className="view-fade">
-            <div className="dashboard-header card">
-              <p className="label">TARGET</p>
-              <h2>{goalData.title}</h2>
-              <p className="deadline-text">期限まであと: {goalData.deadline}</p>
-            </div>
-            <div className="stats-grid">
-              <div className="card stat-card">
-                <span className="stat-val">{history.length}</span>
-                <span className="stat-label">継続日数</span>
-              </div>
-              <div className="card stat-card">
-                <span className="stat-val">{goalData.reward ? '🎁' : '-'}</span>
-                <span className="stat-label">報酬</span>
-              </div>
-            </div>
-            <button className={`action-btn ${isDoneToday ? 'done' : ''}`} onClick={handleDone} disabled={isDoneToday}>
-              {isDoneToday ? '本日のノルマ完了' : '今日の自分に勝つ'}
-            </button>
-            <div className="motivation-quote card">
-              <p>“{goalData.reason}”</p>
-            </div>
-          </div>
-        )
+  useEffect(() => {
+    localStorage.setItem('CONTRACT_BRIGHT_V2', JSON.stringify(goals));
+  }, [goals]);
+
+  useEffect(() => {
+    localStorage.setItem('SERVER_URL', serverUrl);
+  }, [serverUrl]);
+
+  const playAudio = (e, voiceData) => {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    if (!voiceData) {
+      alert("音声データが存在しません。");
+      return;
     }
-  }
+    const audio = new Audio(voiceData);
+    setIsPlaying(true);
+    audio.play().catch(e => {
+      console.error(e);
+      setIsPlaying(false);
+    });
+    audio.onended = () => setIsPlaying(false);
+  };
+
+  const executeDelete = () => {
+    setGoals(goals.filter(g => g.id !== deleteTargetId));
+    setDeleteTargetId(null);
+  };
+
+  const startNewSetup = () => {
+    setEditingGoal({
+      id: Date.now().toString(36) + Math.random().toString(36).substring(2),
+      title: '', reason: '', deadline: '', risk: '', reward: '',
+      isSigned: false, voiceData: null, zundaVoiceData: null, logs: []
+    });
+    setActiveTab('setup');
+  };
+
+  const finalizeContract = () => {
+    setGoals([{ ...editingGoal, isSigned: true }, ...goals]);
+    setEditingGoal(null);
+    setShowConfirm(false);
+    setActiveTab('home');
+  };
+
+  const toggleDailyLog = (goalId) => {
+    const today = new Date().toISOString().split('T')[0];
+    setGoals(goals.map(g => {
+      if (g.id === goalId) {
+        if (g.logs.includes(today)) return g;
+        return { ...g, logs: [...g.logs, today] };
+      }
+      return g;
+    }));
+  };
+
+  // --- 3. 録音機能 ---
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorder = useRef(null);
+  const audioChunks = useRef([]);
+
+  const handleRecord = async () => {
+    if (!isRecording) {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder.current = new MediaRecorder(stream);
+      audioChunks.current = [];
+      mediaRecorder.current.ondataavailable = (event) => audioChunks.current.push(event.data);
+
+      mediaRecorder.current.onstop = async () => {
+        const blob = new Blob(audioChunks.current, { type: 'audio/mp4' });
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = async () => {
+          const originalBase64 = reader.result;
+          setEditingGoal(prev => ({ ...prev, voiceData: originalBase64 }));
+
+          setIsConverting(true);
+          try {
+            const formData = new FormData();
+            formData.append('file', blob);
+
+            const response = await fetch(`${serverUrl}/convert`, {
+              method: 'POST',
+              body: formData,
+            });
+            const data = await response.json();
+            setEditingGoal(prev => ({ ...prev, zundaVoiceData: data.zundaVoice }));
+          } catch (err) {
+            console.error("変換サーバーへの接続に失敗しました:", err);
+            alert("サーバー接続エラー。設定画面でURLを確認してください。");
+          } finally {
+            setIsConverting(false);
+          }
+        };
+      };
+      mediaRecorder.current.start();
+      setIsRecording(true);
+    } else {
+      mediaRecorder.current.stop();
+      setIsRecording(false);
+    }
+  };
 
   return (
-    <div className="mobile-container">
-      <main className="content-area">{renderContent()}</main>
-      <nav className="bottom-nav">
-        <button onClick={() => setCurrentView('dashboard')} className={currentView === 'dashboard' ? 'active' : ''}>ホーム</button>
-        <button onClick={() => setCurrentView('history')} className={currentView === 'history' ? 'active' : ''}>履歴</button>
-        <button onClick={() => setCurrentView('setup')} className={currentView === 'setup' ? 'active' : ''}>設定</button>
+    <div className="app-shell">
+      {/* モーダル類 (変更なし) */}
+      {deleteTargetId && (
+        <div className="modal-overlay">
+          <div className="modal-content animate-pop">
+            <h2>⚠️ データの破棄</h2>
+            <div className="warning-box" style={{ textAlign: 'center' }}>
+              この記録を完全に削除しますか？<br />この操作は取り消せません。
+            </div>
+            <div className="modal-actions">
+              <button className="confirm-btn" style={{ backgroundColor: 'var(--danger)' }} onClick={executeDelete}>破棄する</button>
+              <button className="cancel-link" onClick={() => setDeleteTargetId(null)}>戻る</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showConfirm && (
+        <div className="modal-overlay">
+          <div className="modal-content animate-pop">
+            <h2>📜 最終確認</h2>
+            <div className="warning-box">
+              注意：一度確定すると、この約束をアプリ内から削除することはできません。
+            </div>
+            <button
+              type="button"
+              className={`play-btn ${isPlaying ? 'playing' : ''}`}
+              style={{ width: '100%', marginBottom: '16px', padding: '14px', fontSize: '0.9rem' }}
+              onClick={(e) => playAudio(e, editingGoal.voiceData)}
+              disabled={isPlaying}
+            >
+              {isPlaying ? '再生中... 🔊' : '録音内容を聴く 📢'}
+            </button>
+            <div className="modal-actions">
+              <button className="confirm-btn" onClick={finalizeContract}>この内容で決定する</button>
+              <button className="cancel-link" onClick={() => setShowConfirm(false)}>修正に戻る</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedGoal && (
+        <div className="modal-overlay" onClick={() => setSelectedGoal(null)}>
+          <div className="modal-content detail-view animate-pop" onClick={e => e.stopPropagation()}>
+            <header className="detail-header">
+              <h2>約束の詳細</h2>
+              <button className="close-x" onClick={() => setSelectedGoal(null)}>×</button>
+            </header>
+            <div className="detail-body">
+              <div className="info-item"><label>目標</label><p>{selectedGoal.title}</p></div>
+              <div className="info-item"><label>目標を立てた理由</label><p>{selectedGoal.reason || "未設定"}</p></div>
+              <div className="info-item"><label>達成できないと？</label><p className="risk-text">{selectedGoal.risk}</p></div>
+              <div className="info-item"><label>期限</label><p>{selectedGoal.deadline}</p></div>
+              <div className="info-item"><label>累計達成日数</label><p>{selectedGoal.logs.length} 日</p></div>
+
+              <div className="voice-selector">
+                <label>再生する声を選択</label>
+                <div className="selector-options">
+                  <button className={selectedVoiceType === 'original' ? 'active' : ''} onClick={() => setSelectedVoiceType('original')}>自分の声</button>
+                  <button className={selectedVoiceType === 'zunda' ? 'active' : ''} onClick={() => setSelectedVoiceType('zunda')}>ずんだもん</button>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className={`play-btn wide ${isPlaying ? 'playing' : ''}`}
+                onClick={(e) => playAudio(e, selectedVoiceType === 'zunda' ? selectedGoal.zundaVoiceData : selectedGoal.voiceData)}
+                disabled={isPlaying}
+              >
+                {isPlaying ? '再生中... 🔊' : '音声を聴く 📢'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* メインビュー */}
+      {activeTab === 'home' && (
+        <div className="view-container">
+          <header className="view-header">
+            <h1>進行中</h1>
+            <button className="add-btn" onClick={startNewSetup}>+ 新規</button>
+          </header>
+          <div className="scroll-area">
+            {goals.filter(g => new Date(g.deadline) >= new Date()).length === 0 && (
+              <p className="empty-msg">現在進行中のものはありません。</p>
+            )}
+            {goals.filter(g => new Date(g.deadline) >= new Date()).map(g => (
+              <div key={g.id} className="mission-card">
+                <h3>{g.title}</h3>
+                <p className="deadline-info">締切: {g.deadline}</p>
+                <div className="card-ui">
+                  <button
+                    className={`log-btn ${g.logs.includes(new Date().toISOString().split('T')[0]) ? 'done' : ''}`}
+                    onClick={() => toggleDailyLog(g.id)}
+                    disabled={g.logs.includes(new Date().toISOString().split('T')[0])}
+                  >
+                    {g.logs.includes(new Date().toISOString().split('T')[0]) ? '本日分完了' : '今日のタスク'}
+                  </button>
+                  <button
+                    type="button"
+                    className={`play-btn ${isPlaying ? 'playing' : ''}`}
+                    onClick={(e) => playAudio(e, g.voiceData)}
+                    disabled={isPlaying}
+                  >
+                    {isPlaying ? '🔊' : '📢'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'setup' && editingGoal && (
+        <div className="view-container">
+          <header className="view-header"><h1>目標を立てましょう！！</h1></header>
+          <div className="form-card">
+            <div className="form-item"><label>具体的目標</label><input value={editingGoal.title} onChange={e => setEditingGoal({ ...editingGoal, title: e.target.value })} placeholder="例: 毎日プログラミング" /></div>
+            <div className="form-item"><label>なぜやるのか</label><textarea value={editingGoal.reason} onChange={e => setEditingGoal({ ...editingGoal, reason: e.target.value })} placeholder="理由がないと人は諦めます" /></div>
+            <div className="form-item"><label>期限の設定</label><input type="date" value={editingGoal.deadline} onChange={e => setEditingGoal({ ...editingGoal, deadline: e.target.value })} /></div>
+            <div className="form-item"><label>達成できない時のリスク</label><input value={editingGoal.risk} onChange={e => setEditingGoal({ ...editingGoal, risk: e.target.value })} placeholder="よく考えてください" /></div>
+            <div className="voice-area">
+              <button className={`mic-btn ${isRecording ? 'active' : ''}`} onClick={handleRecord}>{isRecording ? '停止' : '録音'}</button>
+              {isConverting ? <span>ずんだもん変換中... ⏳</span> : (editingGoal.voiceData && <span>録音完了 ✅</span>)}
+            </div>
+            <button className="submit-btn" onClick={() => editingGoal.title && editingGoal.voiceData ? setShowConfirm(true) : alert("目標と録音が必要です")}>絶対に達成する</button>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'history' && (
+        <div className="view-container">
+          <header className="view-header"><h1>アーカイブ</h1></header>
+          <div className="archive-list">
+            {goals.map(g => (
+              <div key={g.id} className="archive-card" onClick={() => setSelectedGoal(g)}>
+                <div className="archive-card-top">
+                  <h4>{g.title}</h4>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span className={`status-tag ${new Date(g.deadline) < new Date() ? 'expired' : 'living'}`}>
+                      {new Date(g.deadline) < new Date() ? '満了' : '継続中'}
+                    </span>
+                    <button className="delete-btn" onClick={(e) => { e.stopPropagation(); setDeleteTargetId(g.id); }}>×</button>
+                  </div>
+                </div>
+                <div className="archive-card-bottom">
+                  <small>累計達成: {g.logs.length}日</small>
+                  <small className="tap-hint">詳細を表示 →</small>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'settings' && (
+        <div className="view-container">
+          <header className="view-header"><h1>システム設定</h1></header>
+          <div className="form-card">
+            <div className="form-item">
+              <label>バックエンドURL</label>
+              <input
+                value={serverUrl}
+                onChange={e => setServerUrl(e.target.value)}
+                placeholder="https://xxx.trycloudflare.com"
+              />
+              <small style={{ color: 'var(--text-muted)', marginTop: '8px', display: 'block' }}>
+                ※末尾に /convert を含めないでください
+              </small>
+            </div>
+            <button className="submit-btn" onClick={() => setActiveTab('home')}>保存して戻る</button>
+          </div>
+        </div>
+      )}
+
+      <nav className="global-nav">
+        <button className={activeTab === 'home' ? 'active' : ''} onClick={() => setActiveTab('home')}>HOME</button>
+        <button className={activeTab === 'history' ? 'active' : ''} onClick={() => setActiveTab('history')}>LOGS</button>
+        <button className={activeTab === 'settings' ? 'active' : ''} onClick={() => setActiveTab('settings')}>URL設定</button>
       </nav>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
