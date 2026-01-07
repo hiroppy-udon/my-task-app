@@ -24,8 +24,15 @@
 }
 
 @keyframes viewFadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .view-header {
@@ -181,7 +188,7 @@ textarea:focus {
   left: 0;
   width: 100%;
   height: 100%;
-  box-sizing: border-box; 
+  box-sizing: border-box;
   background: rgba(15, 23, 42, 0.4);
   backdrop-filter: blur(8px);
   display: flex;
@@ -193,7 +200,8 @@ textarea:focus {
 
 .modal-content {
   background: white;
-  padding: 24px; /* 32pxから縮小 */
+  padding: 24px;
+  /* 32pxから縮小 */
   border-radius: 28px;
   width: 100%;
   max-width: 360px;
@@ -202,18 +210,21 @@ textarea:focus {
 
 .modal-content h2 {
   font-size: 1.25rem;
-  margin-bottom: 12px; /* 16pxから縮小 */
+  margin-bottom: 12px;
+  /* 16pxから縮小 */
   text-align: center;
 }
 
 .warning-box {
   background-color: #fff1f2;
   color: #be123c;
-  padding: 12px; /* 16pxから縮小 */
+  padding: 12px;
+  /* 16pxから縮小 */
   border-radius: 16px;
   font-size: 0.85rem;
   line-height: 1.4;
-  margin-bottom: 16px; /* 24pxから縮小 */
+  margin-bottom: 16px;
+  /* 24pxから縮小 */
   border: 1px solid rgba(225, 29, 72, 0.1);
 }
 
@@ -224,7 +235,8 @@ textarea:focus {
 
 .confirm-btn {
   flex: 2;
-  padding: 12px; /* 16pxから縮小 */
+  padding: 12px;
+  /* 16pxから縮小 */
   background-color: var(--primary);
   color: white;
   border: none;
@@ -236,7 +248,8 @@ textarea:focus {
 
 .cancel-link {
   flex: 1;
-  padding: 12px; /* 16pxから縮小 */
+  padding: 12px;
+  /* 16pxから縮小 */
   background-color: #f1f5f9;
   color: var(--text-muted);
   border: none;
@@ -253,7 +266,8 @@ textarea:focus {
 }
 
 .detail-header {
-  padding: 20px 24px 12px; /* 大幅に縮小 */
+  padding: 20px 24px 12px;
+  /* 大幅に縮小 */
   border-bottom: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
@@ -261,11 +275,13 @@ textarea:focus {
 }
 
 .detail-body {
-  padding: 16px 24px; /* 縮小 */
+  padding: 16px 24px;
+  /* 縮小 */
 }
 
 .info-item {
-  margin-bottom: 16px; /* 32pxから縮小 */
+  margin-bottom: 16px;
+  /* 32pxから縮小 */
 }
 
 .info-item label {
@@ -274,7 +290,8 @@ textarea:focus {
   color: var(--text-muted);
   font-weight: 800;
   text-transform: uppercase;
-  margin-bottom: 4px; /* 10pxから縮小 */
+  margin-bottom: 4px;
+  /* 10pxから縮小 */
 }
 
 .info-item p {
@@ -356,14 +373,26 @@ textarea:focus {
 }
 
 @keyframes pulse {
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.05); opacity: 0.7; }
-  100% { transform: scale(1); opacity: 1; }
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.05);
+    opacity: 0.7;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .play-btn.wide {
   width: 100%;
-  padding: 12px; /* 16pxから縮小 */
+  padding: 12px;
+  /* 16pxから縮小 */
   margin-top: 8px;
   background-color: #f8fafc;
   border: 1px solid var(--border-color);
@@ -414,7 +443,8 @@ textarea:focus {
 }
 
 .voice-selector {
-  margin: 12px 0; /* 縮小 */
+  margin: 12px 0;
+  /* 縮小 */
 }
 
 .voice-selector label {
@@ -437,7 +467,8 @@ textarea:focus {
 .selector-options button {
   flex: 1;
   border: none;
-  padding: 8px; /* 10pxから縮小 */
+  padding: 8px;
+  /* 10pxから縮小 */
   border-radius: 10px;
   font-size: 0.85rem;
   font-weight: 700;
@@ -451,4 +482,116 @@ textarea:focus {
   background: white;
   color: var(--primary);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Custom Heatmap Grid */
+.custom-heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 4px;
+  /* Space between cells */
+  width: 100%;
+}
+
+.heatmap-cell {
+  aspect-ratio: 1 / 1;
+  /* Perfect square */
+  background-color: #f1f5f9;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.heatmap-cell:hover {
+  transform: scale(1.1);
+  background-color: #e2e8f0;
+}
+
+.heatmap-cell.active {
+  background-color: var(--primary);
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);
+}
+
+/* Analytics & Heatmap Overlay */
+.analytics-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: white;
+  color: var(--text-main);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+}
+
+.analytics-btn:hover {
+  background-color: #f8fafc;
+}
+
+.analytics-overlay {
+  z-index: 10000;
+  /* Higher than normal modal */
+}
+
+.analytics-content {
+  max-width: 350px;
+  width: 95%;
+  height: 90vh;
+  /* Taller */
+  display: flex;
+  flex-direction: column;
+}
+
+.analytics-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  /* Start from top */
+  align-items: center;
+  padding: 20px;
+  overflow-y: auto;
+  /* Enable scrolling */
+}
+
+.heatmap-container {
+  width: 100%;
+  max-width: 320px;
+  /* Slightly wider for the grid */
+  margin-bottom: 30px;
+  flex-shrink: 0;
+}
+
+.analytics-stats {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+  flex-shrink: 0;
+  /* Prevent stats from shrinking */
+}
+
+.stat-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #f8fafc;
+  padding: 15px 25px;
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+}
+
+.stat-box .val {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.stat-box .lbl {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  text-transform: uppercase;
 }

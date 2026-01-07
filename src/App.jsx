@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import './App.css';
+import { Tooltip } from 'react-tooltip';
 
 function App() {
   // --- 1. データの初期化 ---
@@ -34,6 +35,7 @@ function App() {
   const [deleteTargetId, setDeleteTargetId] = useState(null);
   const [selectedVoiceType, setSelectedVoiceType] = useState('original');
   const [isConverting, setIsConverting] = useState(false);
+  const [analyticsGoal, setAnalyticsGoal] = useState(null);
 
   useEffect(() => {
     localStorage.setItem('CONTRACT_BRIGHT_V2', JSON.stringify(goals));
@@ -193,6 +195,14 @@ function App() {
               <div className="info-item"><label>期限</label><p>{selectedGoal.deadline}</p></div>
               <div className="info-item"><label>累計達成日数</label><p>{selectedGoal.logs.length} 日</p></div>
 
+              {/* Heatmap Button */}
+              <button
+                className="analytics-btn"
+                onClick={() => setAnalyticsGoal(selectedGoal)}
+              >
+                📊 継続の軌跡を見る
+              </button>
+
               <div className="voice-selector">
                 <label>再生する声を選択</label>
                 <div className="selector-options">
@@ -210,6 +220,68 @@ function App() {
                 {isPlaying ? '再生中... 🔊' : '音声を聴く 📢'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Analytics Overlay (Full Screen) */}
+      {analyticsGoal && (
+        <div className="modal-overlay analytics-overlay" onClick={() => setAnalyticsGoal(null)}>
+          <div className="modal-content analytics-content animate-pop" onClick={e => e.stopPropagation()}>
+            <header className="detail-header">
+              <h2>{analyticsGoal.title} の軌跡</h2>
+              <button className="close-x" onClick={() => setAnalyticsGoal(null)}>×</button>
+            </header>
+
+            <div className="analytics-body">
+              <div className="heatmap-container">
+                <div className="custom-heatmap-grid">
+                  {(() => {
+                    // Start from the first log date, or today if no logs
+                    let startDate = new Date();
+                    if (analyticsGoal.logs && analyticsGoal.logs.length > 0) {
+                      const sortedLogs = [...analyticsGoal.logs].sort();
+                      startDate = new Date(sortedLogs[0]);
+                    }
+
+                    const days = [];
+                    // Generate 300 days (fixed size grid) starting from startDate
+                    // This makes the "Start" appear at Top-Left
+                    for (let i = 0; i < 300; i++) {
+                      const d = new Date(startDate);
+                      d.setDate(d.getDate() + i);
+                      days.push(d.toISOString().split('T')[0]);
+                    }
+
+                    return days.map(dateStr => {
+                      const isActive = analyticsGoal.logs.includes(dateStr);
+                      return (
+                        <div
+                          key={dateStr}
+                          className={`heatmap-cell ${isActive ? 'active' : ''}`}
+                          data-tooltip-id="grid-tooltip"
+                          data-tooltip-content={`${dateStr} ${isActive ? 'Done!' : ''}`}
+                        />
+                      );
+                    });
+                  })()}
+                </div>
+                <Tooltip id="grid-tooltip" />
+              </div>
+
+              <div className="analytics-stats">
+                <div className="stat-box">
+                  <span className="val">{analyticsGoal.logs.length}</span>
+                  <span className="lbl">Total Days</span>
+                </div>
+                {/* Future: Add more stats here like Current Streak */}
+              </div>
+            </div>
+
+            <div className="modal-actions">
+              <button className="cancel-link" onClick={() => setAnalyticsGoal(null)}>戻る</button>
+            </div>
+
           </div>
         </div>
       )}
