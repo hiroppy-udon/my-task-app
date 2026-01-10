@@ -1,29 +1,3 @@
-node ➜ /workspaces/my-task-app (main) $ npx cloudflared tunnel --url http://localhost:5173
-2025-12-22T03:52:55Z INF Thank you for trying Cloudflare Tunnel. Doing so, without a Cloudflare account, is a quick way to experiment and try it out. However, be aware that these account-less Tunnels have no uptime guarantee, are subject to the Cloudflare Online Services Terms of Use (https://www.cloudflare.com/website-terms/), and Cloudflare reserves the right to investigate your use of Tunnels for violations of such terms. If you intend to use Tunnels in production you should use a pre-created named tunnel by following: https://developers.cloudflare.com/cloudflare-one/connections/connect-apps
-2025-12-22T03:52:55Z INF Requesting new quick Tunnel on trycloudflare.com...
-2025-12-22T03:52:58Z INF +--------------------------------------------------------------------------------------------+
-2025-12-22T03:52:58Z INF |  Your quick Tunnel has been created! Visit it at (it may take some time to be reachable):  |
-2025-12-22T03:52:58Z INF |  https://reward-savannah-decisions-hero.trycloudflare.com                                  |
-2025-12-22T03:52:58Z INF +--------------------------------------------------------------------------------------------+
-2025-12-22T03:52:58Z INF Cannot determine default configuration path. No file [config.yml config.yaml] in [~/.cloudflared ~/.cloudflare-warp ~/cloudflare-warp /etc/cloudflared /usr/local/etc/cloudflared]
-2025-12-22T03:52:58Z INF Version 2025.11.1 (Checksum 991dffd8889ee9f0147b6b48933da9e4407e68ea8c6d984f55fa2d3db4bb431d)
-2025-12-22T03:52:58Z INF GOOS: linux, GOVersion: go1.24.9, GoArch: amd64
-2025-12-22T03:52:58Z INF Settings: map[ha-connections:1 protocol:quic url:http://localhost:5173]
-2025-12-22T03:52:58Z INF cloudflared will not automatically update when run from the shell. To enable auto-updates, run cloudflared as a service: https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/configure-tunnels/local-management/as-a-service/
-2025-12-22T03:52:58Z INF Generated Connector ID: 6663fd8d-7cb5-445d-8ad5-bce21f3556e5
-2025-12-22T03:52:58Z INF Initial protocol quic
-2025-12-22T03:52:58Z INF ICMP proxy will use 172.17.0.2 as source for IPv4
-2025-12-22T03:52:58Z INF ICMP proxy will use ::1 in zone lo as source for IPv6
-2025-12-22T03:52:58Z ERR Cannot determine default origin certificate path. No file cert.pem in [~/.cloudflared ~/.cloudflare-warp ~/cloudflare-warp /etc/cloudflared /usr/local/etc/cloudflared]. You need to specify the origin certificate path by specifying the origincert option in the configuration file, or set TUNNEL_ORIGIN_CERT environment variable originCertPath=
-2025-12-22T03:52:58Z INF ICMP proxy will use 172.17.0.2 as source for IPv4
-2025-12-22T03:52:58Z INF ICMP proxy will use ::1 in zone lo as source for IPv6
-2025-12-22T03:52:58Z INF Starting metrics server on 127.0.0.1:20241/metrics
-2025-12-22T03:52:58Z INF Tunnel connection curve preferences: [X25519MLKEM768 CurveP256] connIndex=0 event=0 ip=198.41.192.107
-2025/12/22 03:52:58 failed to sufficiently increase receive buffer size (was: 208 kiB, wanted: 7168 kiB, got: 416 kiB). See https://github.com/quic-go/quic-go/wiki/UDP-Buffer-Sizes for details.
-2025-12-22T03:52:59Z INF Registered tunnel connection connIndex=0 connection=a5d744d4-e233-4a46-b216-5525ef58456a event=0 ip=198.41.192.107 location=kix03 protocol=quic
-2025/12/22 04:18:04 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad Request\r\n\r\n"; err=<nil>
-2025/12/22 04:25:20 Unsolicited response received on idle HTTP channel starting with "HTTP/1.1 400 Bad Request\r\n\r\n"; err=<nil>
-
 
 node ➜ /workspaces/my-task-app (main) $ npm run dev
 
@@ -31,17 +5,27 @@ node ➜ /workspaces/my-task-app (main) $ npm run dev
 > vite
 
 
-  VITE v7.3.0  ready in 213 ms
+  VITE v7.3.0  ready in 420 ms
 
   ➜  Local:   http://localhost:5173/
-  ➜  Network: http://172.17.0.2:5173/
+  ➜  Network: http://172.17.0.3:5173/
   ➜  press h + enter to show help
-3:14:37 PM [vite] vite.config.js changed, restarting server...
-3:14:38 PM [vite] server restarted.
-3:14:39 PM [vite] vite.config.js changed, restarting server...
-3:14:39 PM [vite] server restarted.
-3:05:50 AM [vite] (client) hmr update /src/App.jsx
-4:16:19 AM [vite] (client) hmr update /src/App.css
-4:16:20 AM [vite] (client) hmr update /src/App.css (x2)
+
+------------------------------------------------------------------------------------------
 
 
+ode ➜ /workspaces/my-task-app/backend (main) $ source .venv/bin/activate
+(.venv) node ➜ /workspaces/my-task-app/backend (main) $ python main.py
+/workspaces/my-task-app/backend/.venv/lib/python3.11/site-packages/pydub/utils.py:170: RuntimeWarning: Couldn't find ffmpeg or avconv - defaulting to ffmpeg, but may not work
+  warn("Couldn't find ffmpeg or avconv - defaulting to ffmpeg, but may not work", RuntimeWarning)
+特徴量インデックスをロード中: models/zundamon.index
+改良版エンジンのロードが完了しました。
+1. FrontendのTunnel URLを入力してください:
+> https://arabic-jet-fails-male.trycloudflare.com 
+2. BackendのTunnel URLを入力してください:
+> https://picked-engineer-specifically-international.trycloudflare.com
+
+------------------------------------------------------------------------------------------
+
+node ➜ /workspaces/my-task-app (main) $ npx cloudflared tunnel --url http://localhost:5173
+node ➜ /workspaces/my-task-app (main) $ npx cloudflared tunnel --url http://localhost:8000
