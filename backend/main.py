@@ -1,7 +1,8 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 import base64
 import os
+import json
 from pydub import AudioSegment
 from infer_rvc import RVCInfer
 import qrcode
@@ -73,7 +74,66 @@ async def convert_voice(file: UploadFile = File(...)):
             if os.path.exists(p):
                 os.remove(p)
 
-if __name__ == "__main__":
+DB_FILE = "database.json"
+
+@app.post("/sync")
+async def sync_data(request: Request):
+    try:
+        client_data = await request.json()
+        
+        server_data = []
+        if os.path.exists(DB_FILE):
+            try:
+                with open(DB_FILE, "r", encoding="utf-8") as f:
+                    content = f.read().strip()
+                    if content:
+                        server_data = json.load(f)
+            except Exception as e:
+                print(f"Load Error: {e}")
+                server_data = []
+
+        # Merge Logic: Client + Server
+        # IDをキーにした辞書を作成
+        server_map = {item["id"]: item for item in server_data}
+        
+        for client_item in client_data:
+            c_id = client_item.get("id")
+            if not c_id: continue
+            
+            if c_id in server_map:
+                # 既存データ：ログを統合（和集合）
+                s_item = server_map[c_id]
+                
+                # logs
+                c_logs = client_item.get("logs", [])
+                s_logs = s_item.get("logs", [])
+                merged_logs = list(set(c_logs + s_logs))
+                
+                # failureLogs
+                c_fails = client_item.get("failureLogs", [])
+                s_fails = s_item.get("failureLogs", [])
+                merged_fails = list(set(c_fails + s_fails))
+                
+                # 他のフィールドはクライアントを優先（メタデータ更新のため）
+                s_item.update(client_item)
+                # 統合したログを再セット
+                s_item["logs"] = merged_logs
+                s_item["failureLogs"] = merged_fails
+            else:
+                # 新規データ
+                server_map[c_id] = client_item
+        
+        # マージ結果をリストに戻す
+        final_data = list(server_map.values())
+        
+        # 保存
+        with open(DB_FILE, "w", encoding="utf-8") as f:
+            json.dump(final_data, f, ensure_ascii=False, indent=2)
+            
+        return final_data
+    except Exception as e:
+        print(f"Sync Error: {e}")
+        return {"error": str(e)}
     import uvicorn
     
     print("1. FrontendのTunnel URLを入力してください:")

@@ -46,6 +46,36 @@ function App() {
     localStorage.setItem('SERVER_URL', serverUrl);
   }, [serverUrl]);
 
+  // データ同期機能 (Auto Sync)
+  useEffect(() => {
+    const syncData = async () => {
+      try {
+        // 末尾のスラッシュ削除などの正規化
+        const baseUrl = serverUrl.replace(/\/$/, '');
+        const response = await fetch(`${baseUrl}/sync`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(goals),
+        });
+        if (response.ok) {
+          const merged = await response.json();
+          // 差分がある場合のみ更新 (無限ループ防止)
+          if (JSON.stringify(goals) !== JSON.stringify(merged)) {
+            console.log("Synced with server");
+            setGoals(merged);
+          }
+        }
+      } catch (e) {
+        // 静かに失敗する (UIには出さない)
+        console.error("Background sync failed", e);
+      }
+    };
+
+    // デバウンス処理 (変更から2秒後に同期)
+    const timer = setTimeout(syncData, 2000);
+    return () => clearTimeout(timer);
+  }, [goals, serverUrl]);
+
   const playAudio = (e, voiceData) => {
     if (e) { e.preventDefault(); e.stopPropagation(); }
     if (!voiceData) {
