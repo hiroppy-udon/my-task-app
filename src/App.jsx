@@ -36,6 +36,7 @@ function App() {
   const [selectedVoiceType, setSelectedVoiceType] = useState('original');
   const [isConverting, setIsConverting] = useState(false);
   const [analyticsGoal, setAnalyticsGoal] = useState(null);
+  const [confirmState, setConfirmState] = useState(null);
 
   useEffect(() => {
     localStorage.setItem('CONTRACT_BRIGHT_V2', JSON.stringify(goals));
@@ -81,15 +82,25 @@ function App() {
     setActiveTab('home');
   };
 
-  const toggleDailyLog = (goalId) => {
+  const [resultPendingGoalId, setResultPendingGoalId] = useState(null);
+
+  const handleDailyResult = (goalId, isSuccess) => {
     const today = new Date().toISOString().split('T')[0];
     setGoals(goals.map(g => {
       if (g.id === goalId) {
-        if (g.logs.includes(today)) return g;
-        return { ...g, logs: [...g.logs, today] };
+        if (isSuccess) {
+          if (g.logs.includes(today)) return g;
+          return { ...g, logs: [...g.logs, today] };
+        } else {
+          // Failure case
+          const currentFailures = g.failureLogs || [];
+          if (currentFailures.includes(today)) return g;
+          return { ...g, failureLogs: [...currentFailures, today] };
+        }
       }
       return g;
     }));
+    setResultPendingGoalId(null);
   };
 
   // --- 3. 録音機能 ---
@@ -255,13 +266,16 @@ function App() {
 
                     return days.map(dateStr => {
                       const isActive = analyticsGoal.logs.includes(dateStr);
+                      const isFailed = analyticsGoal.failureLogs && analyticsGoal.failureLogs.includes(dateStr);
                       return (
                         <div
                           key={dateStr}
-                          className={`heatmap-cell ${isActive ? 'active' : ''}`}
+                          className={`heatmap-cell ${isActive ? 'active' : ''} ${isFailed ? 'failed' : ''}`}
                           data-tooltip-id="grid-tooltip"
-                          data-tooltip-content={`${dateStr} ${isActive ? 'Done!' : ''}`}
-                        />
+                          data-tooltip-content={`${dateStr} ${isActive ? 'Done!' : isFailed ? 'Failed...' : ''}`}
+                        >
+                          {isActive ? '〇' : isFailed ? '×' : ''}
+                        </div>
                       );
                     });
                   })()}
@@ -286,6 +300,58 @@ function App() {
         </div>
       )}
 
+      {/* Achievement Selection Modal */}
+      {resultPendingGoalId && (
+        <div className="modal-overlay" onClick={() => { setResultPendingGoalId(null); setConfirmState(null); }}>
+          <div className="modal-content animate-pop" onClick={e => e.stopPropagation()}>
+            <h2>今日の達成報告</h2>
+            {!confirmState ? (
+              <>
+                <div className="warning-box" style={{ textAlign: 'center', backgroundColor: '#f0f9ff', color: '#0369a1', borderColor: '#bae6fd' }}>
+                  今日のタスクは達成できましたか？<br />正直に記録しましょう。
+                </div>
+                <div className="modal-actions" style={{ flexDirection: 'column', gap: '12px' }}>
+                  <button
+                    className="confirm-btn"
+                    onClick={() => setConfirmState('success')}
+                  >
+                    達成できた！ 🎉
+                  </button>
+                  <button
+                    className="cancel-link"
+                    style={{ width: '100%', backgroundColor: '#fee2e2', color: '#ef4444' }}
+                    onClick={() => setConfirmState('failure')}
+                  >
+                    ダメだった... 😢
+                  </button>
+                  <button className="cancel-link" onClick={() => { setResultPendingGoalId(null); setConfirmState(null); }}>キャンセル</button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="warning-box" style={{ textAlign: 'center', backgroundColor: '#f8fafc', color: '#334155', borderColor: '#e2e8f0' }}>
+                  このまま進んでもよろしいですか？
+                </div>
+                <div className="modal-actions" style={{ gap: '12px' }}>
+                  <button
+                    className="cancel-link"
+                    onClick={() => setConfirmState(null)}
+                  >
+                    戻る
+                  </button>
+                  <button
+                    className="confirm-btn"
+                    onClick={() => { handleDailyResult(resultPendingGoalId, confirmState === 'success'); setConfirmState(null); }}
+                  >
+                    進む
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* メインビュー */}
       {activeTab === 'home' && (
         <div className="view-container">
@@ -297,29 +363,36 @@ function App() {
             {goals.filter(g => new Date(g.deadline) >= new Date()).length === 0 && (
               <p className="empty-msg">現在進行中のものはありません。</p>
             )}
-            {goals.filter(g => new Date(g.deadline) >= new Date()).map(g => (
-              <div key={g.id} className="mission-card">
-                <h3>{g.title}</h3>
-                <p className="deadline-info">締切: {g.deadline}</p>
-                <div className="card-ui">
-                  <button
-                    className={`log-btn ${g.logs.includes(new Date().toISOString().split('T')[0]) ? 'done' : ''}`}
-                    onClick={() => toggleDailyLog(g.id)}
-                    disabled={g.logs.includes(new Date().toISOString().split('T')[0])}
-                  >
-                    {g.logs.includes(new Date().toISOString().split('T')[0]) ? '本日分完了' : '今日のタスク'}
-                  </button>
-                  <button
-                    type="button"
-                    className={`play-btn ${isPlaying ? 'playing' : ''}`}
-                    onClick={(e) => playAudio(e, g.voiceData)}
-                    disabled={isPlaying}
-                  >
-                    {isPlaying ? '🔊' : '📢'}
-                  </button>
+            {goals.filter(g => new Date(g.deadline) >= new Date()).map(g => {
+              const today = new Date().toISOString().split('T')[0];
+              const isDone = g.logs.includes(today);
+              const isFailed = g.failureLogs && g.failureLogs.includes(today);
+
+              return (
+                <div key={g.id} className="mission-card">
+                  <h3>{g.title}</h3>
+                  <p className="deadline-info">締切: {g.deadline}</p>
+                  <div className="card-ui">
+                    <button
+                      className={`log-btn ${isDone ? 'done' : ''} ${isFailed ? 'failed' : ''}`}
+                      onClick={() => setResultPendingGoalId(g.id)}
+                      disabled={isDone || isFailed}
+                      style={isFailed ? { backgroundColor: '#ef4444', color: 'white', opacity: 0.7 } : {}}
+                    >
+                      {isDone ? '本日分完了' : isFailed ? '未達成...' : '今日のタスク'}
+                    </button>
+                    <button
+                      type="button"
+                      className={`play-btn ${isPlaying ? 'playing' : ''}`}
+                      onClick={(e) => playAudio(e, g.voiceData)}
+                      disabled={isPlaying}
+                    >
+                      {isPlaying ? '🔊' : '📢'}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -349,7 +422,7 @@ function App() {
               <div key={g.id} className="archive-card" onClick={() => setSelectedGoal(g)}>
                 <div className="archive-card-top">
                   <h4>{g.title}</h4>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                     <span className={`status-tag ${new Date(g.deadline) < new Date() ? 'expired' : 'living'}`}>
                       {new Date(g.deadline) < new Date() ? '満了' : '継続中'}
                     </span>

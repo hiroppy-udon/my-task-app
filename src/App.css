@@ -72,10 +72,15 @@
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.04);
 }
 
-.mission-card h3,
-.archive-card h4 {
+.mission-card h3 {
   margin: 0 0 8px;
   font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.archive-card h4 {
+  margin: 0 0 8px;
+  font-size: 1rem;
   font-weight: 700;
 }
 
@@ -317,8 +322,15 @@ textarea:focus {
 .archive-card-top {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 10px;
+  gap: 12px;
+}
+
+.archive-card-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .status-tag {
@@ -326,6 +338,7 @@ textarea:focus {
   font-weight: 800;
   padding: 4px 10px;
   border-radius: 8px;
+  white-space: nowrap;
 }
 
 .status-tag.living {
@@ -508,8 +521,25 @@ textarea:focus {
 }
 
 .heatmap-cell.active {
-  background-color: var(--primary);
+  background-color: #dbeafe;
+  /* Light blue */
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.8rem;
   box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);
+}
+
+.heatmap-cell.failed {
+  background-color: #fee2e2;
+  color: #ef4444;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.8rem;
 }
 
 /* Analytics & Heatmap Overlay */
