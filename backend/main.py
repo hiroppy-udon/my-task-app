@@ -134,6 +134,8 @@ async def sync_data(request: Request):
     except Exception as e:
         print(f"Sync Error: {e}")
         return {"error": str(e)}
+
+if __name__ == "__main__":
     import uvicorn
     
     print("1. FrontendのTunnel URLを入力してください:")
