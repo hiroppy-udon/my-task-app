@@ -29,3 +29,5 @@ backend/__pycache__/
 backend/*.wav
 backend/*.mp4
 backend/temp_*
+backend/database.json
+sync_status.txt
