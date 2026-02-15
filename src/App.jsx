@@ -469,30 +469,11 @@ function App() {
         </div>
       )}
 
-      {activeTab === 'settings' && (
-        <div className="view-container">
-          <header className="view-header"><h1>システム設定</h1></header>
-          <div className="form-card">
-            <div className="form-item">
-              <label>バックエンドURL</label>
-              <input
-                value={serverUrl}
-                onChange={e => setServerUrl(e.target.value)}
-                placeholder="https://xxx.trycloudflare.com"
-              />
-              <small style={{ color: 'var(--text-muted)', marginTop: '8px', display: 'block' }}>
-                ※末尾に /convert を含めないでください
-              </small>
-            </div>
-            <button className="submit-btn" onClick={() => setActiveTab('home')}>保存して戻る</button>
-          </div>
-        </div>
-      )}
+      {/* システム設定ページは Cloudflare Tunnel を使用する運用では不要なため削除しました */}
 
       <nav className="global-nav">
         <button className={activeTab === 'home' ? 'active' : ''} onClick={() => setActiveTab('home')}>HOME</button>
         <button className={activeTab === 'history' ? 'active' : ''} onClick={() => setActiveTab('history')}>LOGS</button>
-        <button className={activeTab === 'settings' ? 'active' : ''} onClick={() => setActiveTab('settings')}>URL設定</button>
       </nav>
     </div>
   );
