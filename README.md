@@ -1,16 +1,201 @@
-# React + Vite
+# My Task App - セキュアなタスク管理アプリ
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
+![React](https://img.shields.io/badge/React-18-blue)
 
-Currently, two official plugins are available:
+## 🎯 概要
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+タスク管理とモチベーション維持を組み合わせたWebアプリケーション。
 
-## React Compiler
+自分の声を録音して毎日聞くことで継続力を高める機能を搭載。
+個人データ（音声）を扱うため、セキュリティ強化版として暗号化機能を実装中。
 
-The React Compiler is currently not compatible with SWC. See [this issue](https://github.com/vitejs/vite-plugin-react/issues/428) for tracking the progress.
+## ✨ 主な機能
 
-## Expanding the ESLint configuration
+### 現在の機能
+- ✅ タスクの追加・削除・編集
+- ✅ 進捗の記録と可視化
+- ✅ モチベーション音声の録音・再生
+- ✅ データのローカルストレージ保存
+- ✅ レスポンシブデザイン
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 🔒 追加予定（セキュリティ強化）
+- [ ] 音声データのAES-GCM暗号化
+- [ ] 暗号化鍵の安全な管理
+- [ ] データバックアップ・復元機能
+- [ ] セキュリティ設定画面
+- [ ] プライバシーダッシュボード
+
+## 🛠 技術スタック
+
+| カテゴリ | 技術 |
+|---------|------|
+| フロントエンド | React 18, TypeScript |
+| ビルドツール | Vite |
+| スタイリング | TailwindCSS |
+| 音声処理 | Web Audio API |
+| データ永続化 | LocalStorage |
+| 暗号化（実装中） | Web Crypto API (AES-GCM) |
+
+## 🚀 セットアップ
+
+### 前提条件
+- Node.js 18.x 以上
+- npm または yarn
+
+### インストール
+```bash
+# リポジトリのクローン
+git clone https://github.com/hiroppy-udon/my-task-app.git
+cd my-task-app
+
+# 依存関係のインストール
+npm install
+
+# 開発サーバーの起動
+npm run dev
+```
+
+ブラウザで http://localhost:5173 を開く
+
+### ビルド
+```bash
+# 本番用ビルド
+npm run build
+
+# ビルドのプレビュー
+npm run preview
+```
+
+## 📂 プロジェクト構成
+```
+my-task-app/
+├── src/
+│   ├── components/       # Reactコンポーネント
+│   ├── utils/           
+│   │   └── crypto.ts    # 暗号化ユーティリティ（実装中）
+│   ├── App.tsx          # メインアプリ
+│   └── main.tsx         # エントリーポイント
+├── public/              # 静的ファイル
+├── package.json
+└── vite.config.ts
+```
+
+## 🔐 セキュリティ実装計画
+
+### 背景
+音声データという**個人情報を扱う**ため、セキュリティリスクを認識。
+暗号技術の理論を学び、実装に落とし込むことを決意。
+
+### 技術選定
+
+#### なぜ AES-GCM か？
+
+**1. 用途との適合性**
+- 自分だけが使うアプリ → 鍵配送問題なし → 共通鍵暗号が適切
+- 音声データ（大容量）→ 高速処理が必要 → AESが最適
+- 公開鍵暗号（RSA等）は鍵交換用で、大量データ暗号化には不向き
+
+**2. 実装コスト**
+- Web Crypto APIで標準サポート（追加ライブラリ不要）
+- ブラウザネイティブ実装 → 高速・安全
+
+**3. セキュリティ**
+- GCMモード = 認証付き暗号（改ざん検知可能）
+- TLS/HTTPSでも採用されている実績ある方式
+
+### 実装アプローチ
+```typescript
+// 暗号化の流れ
+音声Blob 
+  → ArrayBuffer変換 
+  → AES-GCM暗号化 
+  → Base64エンコード 
+  → localStorage保存
+
+// 復号化の流れ
+localStorage読込 
+  → Base64デコード 
+  → AES-GCM復号化 
+  → Blob変換 
+  → 音声再生
+```
+
+### リスク管理
+
+| リスク | 対策 |
+|-------|------|
+| IVの再利用 | 毎回ランダム生成（`crypto.getRandomValues`） |
+| 鍵の漏洩 | localStorage保存（現状）→ 今後サーバー移行検討 |
+| 改ざん | GCMモードの認証機能で検知 |
+
+## 📚 開発の背景
+
+### モチベーション
+- 個人開発での課題解決（タスク管理 + モチベーション維持）
+- セキュリティ技術への関心（暗号技術入門を読んで実装したい）
+- 航空宇宙分野への応用を見据えた学習（宇宙システムのセキュリティ）
+
+### 学習リソース
+- 『暗号技術入門 第3版』（結城浩）
+- 『空と宇宙のサイバーセキュリティ』
+- 『マスタリングTCP/IP』
+- MDN Web Crypto API ドキュメント
+
+## 🗓 開発ロードマップ
+
+### Phase 1: 暗号化基盤（2025年2月）
+- [x] プロジェクト基盤構築
+- [ ] 暗号化ユーティリティ実装
+- [ ] 単体テスト作成
+- [ ] 既存機能への組み込み
+
+### Phase 2: UI/UX改善（2025年3月）
+- [ ] セキュリティ設定画面
+- [ ] データバックアップ機能
+- [ ] プライバシーダッシュボード
+
+### Phase 3: ドキュメント化（2025年3月）
+- [ ] 実装記録のブログ公開（Zenn）
+- [ ] 技術選定の根拠整理
+- [ ] セキュリティベストプラクティス共有
+
+## 🎓 技術的な学び
+
+### 暗号化実装で学んだこと
+- Web Crypto APIの使い方
+- AES-GCMアルゴリズムの理論と実装のギャップ
+- ブラウザのセキュリティ制約
+- データ型変換（Blob ⇔ ArrayBuffer ⇔ Base64）
+
+### 今後深めたいこと
+- [ ] サーバーサイド暗号化（Node.js）
+- [ ] 鍵管理のベストプラクティス
+- [ ] ゼロ知識証明などの先端技術
+
+## 🤝 コントリビューション
+
+このプロジェクトは個人学習目的ですが、フィードバックやアドバイスは大歓迎です。
+
+## 📝 ライセンス
+
+MIT License
+
+## 👤 作成者
+
+航空宇宙工学専攻の大学生
+
+- 興味分野：宇宙システム × セキュリティ技術
+- 技術スタック：React, TypeScript, Python
+- 学習中：暗号技術、ネットワークセキュリティ、量子暗号
+- GitHub: [@hiroppy-udon](https://github.com/hiroppy-udon)
+
+---
+
+## 📌 注記
+
+このアプリは個人開発プロジェクトです。
+セキュリティ機能の実装を通じて、Webアプリケーション開発と暗号技術の理解を深めることを目的としています。
+
+セキュリティに関する改善提案や、実装のアドバイスがあれば、Issueやプルリクエストでお知らせください。
