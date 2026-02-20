@@ -30,3 +30,45 @@ ode ➜ /workspaces/my-task-app/backend (main) $ source .venv/bin/activate
 node ➜ /workspaces/my-task-app (main) $ npx cloudflared tunnel --url http://localhost:5173
 node ➜ /workspaces/my-task-app (main) $ npx cloudflared tunnel --url http://localhost:8000
 
+const handleRecord = async () => {
+    if (!isRecording) {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder.current = new MediaRecorder(stream);
+      audioChunks.current = [];
+      mediaRecorder.current.ondataavailable = (event) => audioChunks.current.push(event.data);
+
+      mediaRecorder.current.onstop = async () => {
+        const blob = new Blob(audioChunks.current, { type: 'audio/mp4' });
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = async () => {
+          const originalBase64 = reader.result;
+          setEditingGoal(prev => ({ ...prev, voiceData: originalBase64 }));
+
+          setIsConverting(true);
+          try {
+            const formData = new FormData();
+            formData.append('file', blob);
+
+            const response = await fetch(`${serverUrl}/convert`, {
+              method: 'POST',
+              body: formData,
+            });
+            const data = await response.json();
+            setEditingGoal(prev => ({ ...prev, zundaVoiceData: data.zundaVoice }));
+          } catch (err) {
+            console.error("変換サーバーへの接続に失敗しました:", err);
+            alert("サーバー接続エラー。設定画面でURLを確認してください。");
+          } finally {
+            setIsConverting(false);
+          }
+        };
+      };
+      mediaRecorder.current.start();
+      setIsRecording(true);
+    } else {
+      mediaRecorder.current.stop();
+      setIsRecording(false);
+    }
+  };
+

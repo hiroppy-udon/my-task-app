@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import './App.css';
 import { Tooltip } from 'react-tooltip';
+import { supabase, dbToGoal, goalToDb } from './lib/supabase.js';
 
 function App() {
   // --- 1. データの初期化 ---
@@ -11,30 +12,12 @@ function App() {
     } catch { return []; }
   });
 
-  const [serverUrl, setServerUrl] = useState(() => {
-    return localStorage.getItem('SERVER_URL') || 'https://experimental-til-comics-alleged.trycloudflare.com';
-  });
-
-  // 【追加】URLパラメータからサーバーURLを自動取得するロジック
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const urlParam = params.get('url');
-    if (urlParam) {
-      setServerUrl(urlParam);
-      // URLからパラメータを消して見た目を綺麗にする
-      window.history.replaceState({}, document.title, window.location.pathname);
-      alert("サーバーURLを自動更新しました！");
-    }
-  }, []);
-
   const [activeTab, setActiveTab] = useState('home');
   const [editingGoal, setEditingGoal] = useState(null);
   const [showConfirm, setShowConfirm] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
-  const [selectedVoiceType, setSelectedVoiceType] = useState('original');
-  const [isConverting, setIsConverting] = useState(false);
   const [analyticsGoal, setAnalyticsGoal] = useState(null);
   const [confirmState, setConfirmState] = useState(null);
 
@@ -42,39 +25,45 @@ function App() {
     localStorage.setItem('CONTRACT_BRIGHT_V2', JSON.stringify(goals));
   }, [goals]);
 
+  // マウント時にSupabaseからデータを読み込み、localStorageとマージ
   useEffect(() => {
-    localStorage.setItem('SERVER_URL', serverUrl);
-  }, [serverUrl]);
+    const loadFromSupabase = async () => {
+      const { data, error } = await supabase.from('goals').select('*');
+      if (error) { console.error('Supabase load error', error); return; }
+      if (!data || data.length === 0) return;
 
-  // データ同期機能 (Auto Sync)
-  useEffect(() => {
-    const syncData = async () => {
-      try {
-        // 末尾のスラッシュ削除などの正規化
-        const baseUrl = serverUrl.replace(/\/$/, '');
-        const response = await fetch(`${baseUrl}/sync`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(goals),
-        });
-        if (response.ok) {
-          const merged = await response.json();
-          // 差分がある場合のみ更新 (無限ループ防止)
-          if (JSON.stringify(goals) !== JSON.stringify(merged)) {
-            console.log("Synced with server");
-            setGoals(merged);
+      const serverGoals = data.map(dbToGoal);
+      setGoals(prev => {
+        const serverMap = Object.fromEntries(serverGoals.map(g => [g.id, g]));
+        const merged = prev.map(localGoal => {
+          const serverGoal = serverMap[localGoal.id];
+          if (serverGoal) {
+            delete serverMap[localGoal.id];
+            return {
+              ...localGoal,
+              logs: [...new Set([...localGoal.logs, ...serverGoal.logs])],
+              failureLogs: [...new Set([...(localGoal.failureLogs || []), ...(serverGoal.failureLogs || [])])],
+            };
           }
-        }
-      } catch (e) {
-        // 静かに失敗する (UIには出さない)
-        console.error("Background sync failed", e);
-      }
+          return localGoal;
+        });
+        Object.values(serverMap).forEach(g => merged.push(g));
+        return merged;
+      });
     };
+    loadFromSupabase();
+  }, []);
 
-    // デバウンス処理 (変更から2秒後に同期)
-    const timer = setTimeout(syncData, 2000);
+  // goalsが変化したらSupabaseへ同期（2秒デバウンス）
+  useEffect(() => {
+    const sync = async () => {
+      const rows = goals.map(goalToDb);
+      const { error } = await supabase.from('goals').upsert(rows, { onConflict: 'id' });
+      if (error) console.error('Supabase sync error', error);
+    };
+    const timer = setTimeout(sync, 2000);
     return () => clearTimeout(timer);
-  }, [goals, serverUrl]);
+  }, [goals]);
 
   const playAudio = (e, voiceData) => {
     if (e) { e.preventDefault(); e.stopPropagation(); }
@@ -100,7 +89,7 @@ function App() {
     setEditingGoal({
       id: Date.now().toString(36) + Math.random().toString(36).substring(2),
       title: '', reason: '', deadline: '', risk: '', reward: '',
-      isSigned: false, voiceData: null, zundaVoiceData: null, logs: []
+      isSigned: false, voiceData: null, logs: []
     });
     setActiveTab('setup');
   };
@@ -149,27 +138,8 @@ function App() {
         const blob = new Blob(audioChunks.current, { type: 'audio/mp4' });
         const reader = new FileReader();
         reader.readAsDataURL(blob);
-        reader.onloadend = async () => {
-          const originalBase64 = reader.result;
-          setEditingGoal(prev => ({ ...prev, voiceData: originalBase64 }));
-
-          setIsConverting(true);
-          try {
-            const formData = new FormData();
-            formData.append('file', blob);
-
-            const response = await fetch(`${serverUrl}/convert`, {
-              method: 'POST',
-              body: formData,
-            });
-            const data = await response.json();
-            setEditingGoal(prev => ({ ...prev, zundaVoiceData: data.zundaVoice }));
-          } catch (err) {
-            console.error("変換サーバーへの接続に失敗しました:", err);
-            alert("サーバー接続エラー。設定画面でURLを確認してください。");
-          } finally {
-            setIsConverting(false);
-          }
+        reader.onloadend = () => {
+          setEditingGoal(prev => ({ ...prev, voiceData: reader.result }));
         };
       };
       mediaRecorder.current.start();
@@ -244,18 +214,10 @@ function App() {
                 📊 継続の軌跡を見る
               </button>
 
-              <div className="voice-selector">
-                <label>再生する声を選択</label>
-                <div className="selector-options">
-                  <button className={selectedVoiceType === 'original' ? 'active' : ''} onClick={() => setSelectedVoiceType('original')}>自分の声</button>
-                  <button className={selectedVoiceType === 'zunda' ? 'active' : ''} onClick={() => setSelectedVoiceType('zunda')}>ずんだもん</button>
-                </div>
-              </div>
-
               <button
                 type="button"
                 className={`play-btn wide ${isPlaying ? 'playing' : ''}`}
-                onClick={(e) => playAudio(e, selectedVoiceType === 'zunda' ? selectedGoal.zundaVoiceData : selectedGoal.voiceData)}
+                onClick={(e) => playAudio(e, selectedGoal.voiceData)}
                 disabled={isPlaying}
               >
                 {isPlaying ? '再生中... 🔊' : '音声を聴く 📢'}
@@ -437,7 +399,7 @@ function App() {
             <div className="form-item"><label>達成できない時のリスク</label><input value={editingGoal.risk} onChange={e => setEditingGoal({ ...editingGoal, risk: e.target.value })} placeholder="よく考えてください" /></div>
             <div className="voice-area">
               <button className={`mic-btn ${isRecording ? 'active' : ''}`} onClick={handleRecord}>{isRecording ? '停止' : '録音'}</button>
-              {isConverting ? <span>ずんだもん変換中... ⏳</span> : (editingGoal.voiceData && <span>録音完了 ✅</span>)}
+              {editingGoal.voiceData && <span>録音完了 ✅</span>}
             </div>
             <button className="submit-btn" onClick={() => editingGoal.title && editingGoal.voiceData ? setShowConfirm(true) : alert("目標と録音が必要です")}>絶対に達成する</button>
           </div>

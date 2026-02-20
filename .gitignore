@@ -31,3 +31,7 @@ backend/*.mp4
 backend/temp_*
 backend/database.json
 sync_status.txt
+
+# 環境変数（Supabase認証情報を含むため必ずgit管理外に）
+.env
+.env.local
