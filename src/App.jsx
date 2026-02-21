@@ -25,31 +25,14 @@ function App() {
     localStorage.setItem('CONTRACT_BRIGHT_V2', JSON.stringify(goals));
   }, [goals]);
 
-  // マウント時にSupabaseからデータを読み込み、localStorageとマージ
+  // マウント時にSupabaseからデータを読み込む（Supabaseを正とする）
   useEffect(() => {
     const loadFromSupabase = async () => {
       const { data, error } = await supabase.from('goals').select('*');
       if (error) { console.error('Supabase load error', error); return; }
-      if (!data || data.length === 0) return;
-
-      const serverGoals = data.map(dbToGoal);
-      setGoals(prev => {
-        const serverMap = Object.fromEntries(serverGoals.map(g => [g.id, g]));
-        const merged = prev.map(localGoal => {
-          const serverGoal = serverMap[localGoal.id];
-          if (serverGoal) {
-            delete serverMap[localGoal.id];
-            return {
-              ...localGoal,
-              logs: [...new Set([...localGoal.logs, ...serverGoal.logs])],
-              failureLogs: [...new Set([...(localGoal.failureLogs || []), ...(serverGoal.failureLogs || [])])],
-            };
-          }
-          return localGoal;
-        });
-        Object.values(serverMap).forEach(g => merged.push(g));
-        return merged;
-      });
+      if (!data) return;
+      // Supabaseのデータを正として上書き（削除済みデータが復活しないよう）
+      setGoals(data.map(dbToGoal));
     };
     loadFromSupabase();
   }, []);
@@ -80,9 +63,12 @@ function App() {
     audio.onended = () => setIsPlaying(false);
   };
 
-  const executeDelete = () => {
-    setGoals(goals.filter(g => g.id !== deleteTargetId));
+  const executeDelete = async () => {
+    const id = deleteTargetId;
+    setGoals(goals.filter(g => g.id !== id));
     setDeleteTargetId(null);
+    const { error } = await supabase.from('goals').delete().eq('id', id);
+    if (error) console.error('Supabase delete error', error);
   };
 
   const startNewSetup = () => {
