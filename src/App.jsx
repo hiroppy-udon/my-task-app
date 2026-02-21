@@ -21,25 +21,35 @@ function App() {
   const [analyticsGoal, setAnalyticsGoal] = useState(null);
   const [confirmState, setConfirmState] = useState(null);
 
+  // 初回ロード中はupsertを走らせないためのフラグ
+  const isMounting = useRef(true);
+
   useEffect(() => {
     localStorage.setItem('CONTRACT_BRIGHT_V2', JSON.stringify(goals));
   }, [goals]);
 
-  // マウント時にSupabaseからデータを読み込む（Supabaseを正とする）
+  // マウント時にSupabaseからデータを読み込む（Supabaseを唯一の正とする）
   useEffect(() => {
     const loadFromSupabase = async () => {
       const { data, error } = await supabase.from('goals').select('*');
-      if (error) { console.error('Supabase load error', error); return; }
-      if (!data) return;
-      // Supabaseのデータを正として上書き（削除済みデータが復活しないよう）
-      setGoals(data.map(dbToGoal));
+      // ロード完了後にupsertを許可（成否問わず）
+      if (error) {
+        console.error('Supabase load error', error);
+        isMounting.current = false;
+        return;
+      }
+      // Supabaseの内容で完全上書き（空なら空にする）
+      setGoals(data ? data.map(dbToGoal) : []);
+      isMounting.current = false;
     };
     loadFromSupabase();
   }, []);
 
-  // goalsが変化したらSupabaseへ同期（2秒デバウンス）
+  // goalsが変化したらSupabaseへ同期（初回ロード中はスキップ）
   useEffect(() => {
+    if (isMounting.current) return;
     const sync = async () => {
+      if (goals.length === 0) return;
       const rows = goals.map(goalToDb);
       const { error } = await supabase.from('goals').upsert(rows, { onConflict: 'id' });
       if (error) console.error('Supabase sync error', error);
