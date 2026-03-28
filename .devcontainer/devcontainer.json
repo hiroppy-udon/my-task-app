@@ -15,7 +15,17 @@
 	// "postCreateCommand": "yarn install",
 
 	// Configure tool-specific properties.
-	// "customizations": {},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"anthropic.claude-code",
+				"dbaeumer.vscode-eslint",
+				"github.copilot-chat",
+				"ms-ceintl.vscode-language-pack-ja",
+				"eamodio.gitlens"
+			]
+		}
+	},
 
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
 	// "remoteUser": "root"
